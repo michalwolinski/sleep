@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: System info
+        run: |
+          uname -a
+          cc --version || true
+
+      - name: Build
+        run: make clean && make
+
+      - name: Runtime test (sleep 2 ≈ 2s)
+        shell: bash
+        run: |
+          start=$(date +%s)
+          ./sleep 2
+          end=$(date +%s)
+          elapsed=$((end - start))
+
+          echo "Elapsed: ${elapsed}s"
+
+          if [ "$elapsed" -lt 1 ] || [ "$elapsed" -gt 3 ]; then
+            echo "❌ sleep duration out of range"
+            exit 1
+          else
+            echo "✅ sleep duration OK"
+          fi
+
+      - name: Inspect binary
+        run: |
+          ls -lh sleep
+          file sleep
